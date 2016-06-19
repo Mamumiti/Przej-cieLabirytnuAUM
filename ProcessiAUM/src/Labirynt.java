@@ -1,6 +1,8 @@
 import processing.core.PApplet;
 import processing.event.KeyEvent;
 import processing.event.MouseEvent;
+
+import java.sql.Time;
 import java.util.*; //<>//
 
 public class Labirynt extends PApplet {
@@ -24,34 +26,169 @@ public class Labirynt extends PApplet {
 	Maze maze;
 	Map k;
 	int map[][][];
-	int scale = 6;
+	///
+	int scale = 7;
+	////
 	java.awt.Point start = new java.awt.Point();
 	java.awt.Point end = new java.awt.Point();
 	int posX = 0;
 	int posY = 0;
+	int lengthX;
+	int lengthY;
 	java.util.Random generator = new java.util.Random();
 	int m;
 
 	public void setup() {
 		translate(25, 25);
+
+		randomSeed(System.currentTimeMillis());
 		background(255, 255, 255);
+		/////
 		frameRate(100);
+		//////
 		strokeWeight(1);
 		fill(255, 100);
 		stroke(0, 100);
-		maze = new Maze("mazeData.txt");
-		k = new Map("mazeData.txt");
+		maze = new Maze("t2.txt");
+		k = new Map("t2.txt");
 		map = k.getMapMatrix();
 		end.x = k.getMaxX();
 		end.y = k.getMaxY();
+		lengthX = k.getMaxX();
+		lengthY = k.getMaxY();
 		maze.drawMaze();
+
+		stroke(0, 10);
 		fill(255, 0, 0);
 		ArrayList<String> places = new ArrayList<String>();
 	}
 
+	public void draw() {
+		translate(25, 25);
+		fill(255, 255, 0);
+		drawObj(posX, posY, scale);
+		 wallFollower();
+		// aStar();
+		//bruteForce();
+		if ((posX == end.x) && (posY == end.y)) {
+			fill(0, 255, 0);
+			drawObj(posX, posY, scale);
+			noLoop();
+		}
+
+	}
+
 	void drawObj(int x, int y, int scale) {
-		stroke(0);
 		rect(x * scale, y * scale, scale, scale);
+	}
+
+	void bruteForce() {
+		int r = Math.round(random(3));
+		println(lastDir + " " + r);
+		println("X " + posX + " Y " + posY);
+		if (isDeadEnd()) {
+
+			fill(0, 0, 0);
+			drawObj(posX, posY, scale);
+			fill(255, 0, 0);
+			// println("POZx " + posX + " POZy " + posY + " is dedEnd");
+
+			if (map[posX][posY][MapHelper.D] == 0) {
+				posY++;
+				map[posX][posY][MapHelper.U] = 1;
+
+			} else if (map[posX][posY][MapHelper.R] == 0) {
+				posX++;
+				map[posX][posY][MapHelper.L] = 1;
+
+			} else if (map[posX][posY][MapHelper.U] == 0) {
+				posY--;
+				map[posX][posY][MapHelper.D] = 1;
+
+			} else if (map[posX][posY][MapHelper.L] == 0) {
+				posX--;
+				map[posX][posY][MapHelper.R] = 1;
+
+			}
+
+		} else {
+			switch (r) {
+			case 3:
+				if (map[posX][posY][3] == 0 && (lastDir != 0)) {
+					posX++;
+					lastDir = 3;
+				}
+
+				break;
+			case 2:
+				if (map[posX][posY][2] == 0 && (lastDir != 1)) {
+					posY++;
+					lastDir = 2;
+				}
+
+				break;
+			case 1:
+				if (map[posX][posY][1] == 0 && (lastDir != 2)) {
+					posY--;
+					lastDir = 1;
+				}
+
+				break;
+			case 0:
+				if (map[posX][posY][0] == 0 && (lastDir != 3)) {
+					posX--;
+					lastDir = 0;
+				}
+				break;
+			}
+		}
+	}
+
+	void aStar() {
+		// println("x " + posX + " y " + posY);
+		if (isDeadEnd()) {
+
+			fill(0, 0, 0);
+			drawObj(posX, posY, scale);
+			fill(255, 0, 0);
+			// println("POZx " + posX + " POZy " + posY + " is dedEnd");
+
+			if (map[posX][posY][MapHelper.D] == 0) {
+				posY++;
+				map[posX][posY][MapHelper.U] = 1;
+
+			} else if (map[posX][posY][MapHelper.R] == 0) {
+				posX++;
+				map[posX][posY][MapHelper.L] = 1;
+
+			} else if (map[posX][posY][MapHelper.U] == 0) {
+				posY--;
+				map[posX][posY][MapHelper.D] = 1;
+
+			} else if (map[posX][posY][MapHelper.L] == 0) {
+				posX--;
+				map[posX][posY][MapHelper.R] = 1;
+
+			}
+
+		} else if (map[posX][posY][MapHelper.R] == 0 && lastDir != MapHelper.L) {
+			posX++;
+			lastDir = MapHelper.R;
+
+		} else if (map[posX][posY][MapHelper.D] == 0 && lastDir != MapHelper.U) {
+			posY++;
+			lastDir = MapHelper.D;
+
+		} else if (map[posX][posY][MapHelper.U] == 0 && lastDir != MapHelper.D) {
+			posY--;
+			lastDir = MapHelper.U;
+
+		} else if (map[posX][posY][MapHelper.L] == 0 && lastDir != MapHelper.R) {
+			posX--;
+			lastDir = MapHelper.L;
+
+		}
+
 	}
 
 	boolean isDeadEnd() {
@@ -77,6 +214,35 @@ public class Labirynt extends PApplet {
 			return false;
 	}
 
+	void returnFromDeadEnd() {
+
+		switch (lastDir) {
+		case 3:
+			posX--;
+
+			map[posX][posY][MapHelper.R] = 1;
+
+			break;
+		case 2:
+			posY--;
+
+			map[posX][posY][MapHelper.D] = 1;
+
+			break;
+		case 1:
+			posY++;
+
+			map[posX][posY][MapHelper.U] = 1;
+
+			break;
+		case 0:
+			posX++;
+			map[posX][posY][MapHelper.L] = 1;
+
+			break;
+		}
+	}
+
 	boolean canGoForwad(int posX, int posY, int lastDirection) {
 		if (map[posX][posY][lastDirection] == 0) {
 			return true;
@@ -89,43 +255,43 @@ public class Labirynt extends PApplet {
 		switch (direction) {
 		case 3:
 			posX++;
-			if(temp==true) {
-				map[posX][posY][MapHelper.L]=1;
+			if (temp == true) {
+				map[posX][posY][MapHelper.L] = 1;
 			}
 			break;
 		case 2:
 			posY++;
-			if(temp==true) {
-				map[posX][posY][MapHelper.U]=1;
+			if (temp == true) {
+				map[posX][posY][MapHelper.U] = 1;
 			}
 			break;
 		case 1:
 			posY--;
-			if(temp==true) {
-				map[posX][posY][MapHelper.D]=1;
+			if (temp == true) {
+				map[posX][posY][MapHelper.D] = 1;
 			}
 			break;
 		case 0:
 			posX--;
-			if(temp==true) {
-				map[posX][posY][MapHelper.R]=1;
+			if (temp == true) {
+				map[posX][posY][MapHelper.R] = 1;
 			}
 			break;
 		}
 	}
 
-	int lastDir;
+	int lastDir = -1;
 	// -1 - vertical, 1 horizontal
 	int orientation = 1;
 
-	void firsAlgorithm() {
+	void wallFollower() {
 		boolean temp = isDeadEnd();
-		println("Aktualna pozycja X =  " + posX + " Y = " + posY + " ");
+		// println("Aktualna pozycja X = " + posX + " Y = " + posY + " ");
 		if (isDeadEnd()) {
 			fill(0, 0, 0);
 			drawObj(posX, posY, scale);
 			fill(255, 0, 0);
-			println("POZx " + posX + " POZy " + posY + " is dedEnd");
+			// println("POZx " + posX + " POZy " + posY + " is dedEnd");
 		}
 
 		if (orientation == 0) {
@@ -183,20 +349,6 @@ public class Labirynt extends PApplet {
 		moveForward(lastDir);
 
 		// return 0;
-	}
-
-	public void draw() {
-		translate(25, 25);
-		drawObj(posX, posY, scale);
-		firsAlgorithm();
-
-		if ((posX == end.x) && (posY == end.y)) {
-			redraw();
-			fill(0, 255, 0);
-			drawObj(posX, posY, scale);
-			noLoop();
-		}
-		// noLoop();
 	}
 
 	public class Maze {
